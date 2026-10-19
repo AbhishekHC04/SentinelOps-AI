@@ -1,0 +1,59 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-secret.properties
+**/secrets/
+**/credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Java / Maven build output
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/env/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# Models, datasets, and generated artifacts
+**/datasets/
+**/data/raw/
+**/models/
+**/*.joblib
+**/*.pkl
+**/*.h5
+**/*.pt
+**/*.pth
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Local backups
+/backups/
+# Local configuration backups
+**/application.properties.backup-*
+
+
+# Backup files must never be published
+**/*.backup
+**/*.backup-*
+**/*-backup.*
+**/*.before-*.backup

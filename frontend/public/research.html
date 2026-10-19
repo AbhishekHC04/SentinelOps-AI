@@ -1,0 +1,757 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Research | SentinelOps AI</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080d18;
+      --panel: #111b2c;
+      --panel2: #162238;
+      --border: #293851;
+      --text: #e8edf7;
+      --muted: #8fa1bd;
+      --purple: #8b5cf6;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+    }
+    button, input, textarea { font: inherit; }
+    a { color: #b9a3ff; }
+    .shell { width: min(1200px, 100%); margin: auto; padding: 28px 22px 50px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 30px; flex-wrap: wrap; }
+    .brand { font-size: 21px; font-weight: 800; }
+    .brand span { color: #a78bfa; }
+    .eyebrow { color: #a78bfa; font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 10px; }
+    h1 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 10px; }
+    h2 { font-size: 18px; margin: 0 0 8px; }
+    h3 { font-size: 15px; margin: 0 0 12px; }
+    p { color: var(--muted); line-height: 1.6; }
+    .intro { margin-bottom: 25px; }
+    .intro p { max-width: 720px; margin: 0; }
+    .button, button { border: 1px solid var(--border); border-radius: 10px; background: var(--panel2); color: var(--text); padding: 11px 15px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .primary { background: var(--purple); border-color: var(--purple); color: white; font-weight: 700; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 18px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; min-width: 0; margin-bottom: 18px; }
+    .sub { font-size: 13px; margin: 0 0 18px; }
+    label { display: block; color: #c8d3e5; font-size: 13px; margin: 14px 0 8px; }
+    input, textarea { display: block; width: 100%; color: var(--text); background: #0c1525; border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; outline: none; }
+    input:focus, textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 2px #8b5cf633; }
+    textarea { min-height: 125px; resize: vertical; }
+    .search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+    .message { display: none; margin: 14px 0 0; padding: 12px; border-radius: 9px; font-size: 13px; overflow-wrap: anywhere; }
+    .error { color: #fecaca; background: #451a1a; border: 1px solid #7f3030; }
+    .success { color: #a7f3d0; background: #073b30; border: 1px solid #176b56; }
+    .result { display: none; margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .result-head { padding: 13px 15px; background: #17243a; display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .pill { font-size: 11px; color: #c4b5fd; background: #382568; border-radius: 20px; padding: 5px 9px; }
+    pre { padding: 15px; margin: 0; max-height: 330px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; color: #cbd5e1; }
+    .intel-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .intel-link { display: block; padding: 13px; border: 1px solid var(--border); background: #0c1525; border-radius: 10px; text-decoration: none; min-width: 0; }
+    .intel-link strong { display: block; font-size: 13px; margin-bottom: 5px; }
+    .intel-link small { color: var(--muted); font-size: 11px; }
+    .intel-link:hover { border-color: var(--purple); }
+    .note { padding: 13px 0; border-bottom: 1px solid var(--border); }
+    .note:last-child { border-bottom: 0; }
+    .note time { color: var(--muted); font-size: 11px; }
+    .note p { margin: 7px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .empty { font-size: 13px; color: var(--muted); padding: 10px 0; }
+    .disclaimer { font-size: 12px; margin-top: 14px; }
+    .footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 12px; }
+    .vt-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .vt-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin: 16px 0; }
+    .stat { padding: 13px 10px; border: 1px solid var(--border); border-radius: 11px; background: #0c1525; min-width: 0; }
+    .stat strong { display: block; font-size: 23px; margin-bottom: 4px; }
+    .stat small { color: var(--muted); font-size: 11px; }
+    .stat.bad strong { color: var(--red); }
+    .stat.warn strong { color: var(--yellow); }
+    .stat.good strong { color: var(--green); }
+    .vt-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .meta { background: #0c1525; border: 1px solid var(--border); padding: 12px; border-radius: 10px; min-width: 0; }
+    .meta small { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+    .meta strong { overflow-wrap: anywhere; font-size: 13px; }
+    .vt-link { margin-top: 14px; }
+    .status { display: inline-block; padding: 5px 9px; border-radius: 20px; font-size: 11px; background: #243149; color: #cbd5e1; }
+    .status.danger { background: #451a1a; color: #fecaca; }
+    .status.caution { background: #422f0a; color: #fde68a; }
+    .status.safe { background: #073b30; color: #a7f3d0; }
+    .section-space { margin-top: 20px; }
+    .history-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+    .history-heading h2 { margin-bottom:6px; }
+    .history-search { display:grid; grid-template-columns:minmax(180px,1fr) auto auto; gap:10px; align-items:end; margin-bottom:16px; }
+    .history-search label { grid-column:1 / -1; margin-bottom:-5px; }
+    .history-search input { margin:0; }
+    .history-summary { color:var(--muted); font-size:12px; margin:10px 0; }
+    .history-list { display:grid; gap:10px; }
+    .history-record { border:1px solid var(--border); border-radius:12px; padding:14px; background:rgba(255,255,255,.02); min-width:0; }
+    .history-record-top { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .history-target { font-weight:700; overflow-wrap:anywhere; color:#dbeafe; }
+    .history-date { font-size:12px; color:var(--muted); }
+    .history-note { margin:10px 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; }
+    .history-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .history-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; }
+    .history-pagination span { color:var(--muted); font-size:13px; text-align:center; }
+    @media (max-width:560px) {
+      .history-search { grid-template-columns:1fr 1fr; }
+      .history-search input, .history-search label { grid-column:1 / -1; }
+    }
+    @media (max-width: 780px) {
+      .grid { grid-template-columns: 1fr; }
+      .shell { padding: 20px 14px 35px; }
+      .panel { padding: 17px; }
+    }
+    @media (max-width: 440px) {
+      .search-row, .intel-grid { grid-template-columns: 1fr; }
+      .search-row button { width: 100%; }
+      .vt-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .vt-meta { grid-template-columns: 1fr; }
+    }
+  </style>
+<style>
+
+/* SENTINELOPS_FUTURISTIC_THEME_V1 */
+:root {
+  color-scheme: dark;
+  --bg: #070b16;
+  --panel: #0d1425;
+  --border: #293b59;
+  --muted: #9aa9c4;
+  --accent: #a78bfa;
+  --cyan: #55e7ff;
+}
+html { background: #070b16; scroll-behavior: smooth; }
+body {
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(117, 77, 224, .15), transparent 38%),
+    radial-gradient(ellipse at 0% 45%, rgba(39, 187, 218, .07), transparent 35%),
+    #070b16 !important;
+  color: #e8efff !important;
+}
+header, .panel, article, section, .card {
+  border-color: #293b59;
+}
+.panel, #researchHistoryPanel {
+  background: linear-gradient(145deg, rgba(17, 28, 49, .97), rgba(10, 18, 33, .98));
+  box-shadow: inset 0 1px rgba(255,255,255,.025), 0 0 25px rgba(57, 191, 230, .035);
+}
+h1, h2, h3 { letter-spacing: -.025em; }
+input, textarea, select, pre {
+  color: #e8efff;
+  background-color: #0a1221;
+  border-color: #304463;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #55e7ff;
+  box-shadow: 0 0 0 3px rgba(85, 231, 255, .1);
+  outline: none;
+}
+button, .button, .primary {
+  transition: background .2s, border-color .2s, box-shadow .2s, transform .2s;
+}
+button:hover, .button:hover, .primary:hover {
+  border-color: #55e7ff;
+  box-shadow: 0 0 20px rgba(85, 231, 255, .09);
+}
+.primary {
+  background: linear-gradient(110deg, #7554ec, #6958ff 55%, #287fae);
+  border-color: rgba(147, 130, 255, .75);
+  color: white;
+}
+.primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+a { color: #70e9ff; }
+.stat, .meta, .history-record {
+  border-color: #293b59;
+  background: rgba(12, 21, 38, .8);
+}
+.history-record {
+  border-radius: 14px;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.history-record:hover {
+  border-color: rgba(85, 231, 255, .55);
+  box-shadow: 0 0 24px rgba(85, 231, 255, .07);
+  transform: translateY(-1px);
+}
+.status, .pill {
+  border-color: #344767;
+}
+::selection { background: #7354d9; color: white; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div class="brand">SentinelOps <span>AI</span></div>
+    <a class="button" href="/">&#8592; Back to dashboard</a>
+  </header>
+
+  <section class="intro">
+    <div class="eyebrow">THREAT INTELLIGENCE</div>
+    <h1>Security Research Workbench</h1>
+    <p>Investigate IP addresses and domains using RDAP registration data and VirusTotal threat intelligence. Save investigation notes in your SentinelOps database.</p>
+  </section>
+
+  <div class="grid">
+    <section>
+      <article class="panel">
+        <h2>Target investigation</h2>
+        <p class="sub">Enter a public IP address or domain name.</p>
+        <form id="lookupForm">
+          <label for="target">IP address or domain</label>
+          <div class="search-row">
+            <input id="target" name="target" placeholder="Example: 8.8.8.8 or example.com" maxlength="253" required autocomplete="off" />
+            <button id="lookupButton" class="primary" type="submit">Investigate</button>
+          </div>
+        </form>
+        <div class="hint">RDAP registration data and VirusTotal analysis are separate sources. Results can be incomplete or outdated.</div>
+        <div id="lookupMessage" class="message" role="status"></div>
+      </article>
+
+      <article id="vtPanel" class="panel" style="display:none">
+        <div class="vt-top">
+          <div>
+            <h2>VirusTotal threat analysis</h2>
+            <p id="vtSubtitle" class="sub" style="margin-top:6px;margin-bottom:0">Analysis summary</p>
+          </div>
+          <span id="vtStatus" class="status">Awaiting results</span>
+        </div>
+        <div id="vtMessage" class="message" role="status"></div>
+        <div id="vtContent" style="display:none">
+          <div class="vt-stats">
+            <div class="stat bad"><strong id="vtMalicious">Ã¢â‚¬â€</strong><small>Malicious</small></div>
+            <div class="stat warn"><strong id="vtSuspicious">Ã¢â‚¬â€</strong><small>Suspicious</small></div>
+            <div class="stat good"><strong id="vtHarmless">Ã¢â‚¬â€</strong><small>Harmless</small></div>
+            <div class="stat"><strong id="vtUndetected">Ã¢â‚¬â€</strong><small>Undetected</small></div>
+          </div>
+          <div class="vt-meta">
+            <div class="meta"><small>Reputation score</small><strong id="vtReputation">Unavailable</strong></div>
+            <div class="meta"><small>Country</small><strong id="vtCountry">Unavailable</strong></div>
+            <div class="meta"><small>Autonomous system (ASN)</small><strong id="vtAsn">Unavailable</strong></div>
+            <div class="meta"><small>Network / owner</small><strong id="vtOwner">Unavailable</strong></div>
+            <div class="meta"><small>Last analysis</small><strong id="vtDate">Unavailable</strong></div>
+            <div class="meta"><small>Community votes</small><strong id="vtVotes">Unavailable</strong></div>
+          </div>
+          <a id="vtReport" class="button vt-link" href="#" target="_blank" rel="noopener noreferrer">Open full VirusTotal report &rarr;</a>
+          <p class="disclaimer">A detection count is not a definitive verdict. Review the context and corroborate with independent sources.</p>
+        </div>
+      </article>
+
+      <article id="rdapPanel" class="panel" style="display:none">
+        <h2>RDAP registration data</h2>
+        <div id="rdapResult" class="result" style="display:block">
+          <div class="result-head"><strong id="resultTarget"></strong><span class="pill">RDAP response</span></div>
+          <pre id="resultData"></pre>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Threat intelligence resources</h2>
+        <p class="sub">Open the selected target in independent research services.</p>
+        <div id="intelLinks" class="intel-grid"><div class="empty">Investigate a target to generate links.</div></div>
+        <p class="disclaimer">External sites have their own terms, coverage, and privacy policies. Avoid submitting confidential indicators to public services without authorization.</p>
+      </article>
+    </section>
+
+    <section>
+      <article class="panel">
+        <h2>Investigation notes</h2>
+        <p class="sub">Notes are saved in MySQL and grouped by the exact IP or domain.</p>
+        <form id="noteForm">
+          <label for="noteTarget">Target</label>
+          <input id="noteTarget" placeholder="Investigate a target first" readonly required />
+          <label for="noteText">Research notes</label>
+          <textarea id="noteText" maxlength="10000" required placeholder="Record evidence, source links, timestamps, and next steps..."></textarea>
+          <button id="saveNoteButton" class="primary" type="submit">Save note to MySQL</button>
+        </form>
+        <div id="noteMessage" class="message" role="status"></div>
+        <div class="section-space">
+          <h2>Saved notes</h2>
+          <div id="notesList" class="empty">Investigate a target to load its notes.</div>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <section id="researchHistoryPanel" class="section-space">
+    <article class="panel">
+      <div class="history-heading">
+        <div>
+          <h2>Research History</h2>
+          <p class="sub">Search saved investigations and reopen a target.</p>
+        </div>
+        <button id="historyRefreshButton" type="button">Refresh history</button>
+      </div>
+
+      <form id="historySearchForm" class="history-search">
+        <label for="historySearch">Search IP, domain, or note</label>
+        <input id="historySearch" type="search" maxlength="253"
+               placeholder="e.g. 8.8.8.8 or suspicious traffic" />
+        <button class="primary" type="submit">Search</button>
+        <button id="historyClearButton" type="button">Clear</button>
+      </form>
+
+      <div id="historyMessage" class="message" role="status"></div>
+      <div id="historySummary" class="history-summary">History has not loaded yet.</div>
+      <div id="historyList" class="history-list">
+        <div class="empty">Loading saved investigations...</div>
+      </div>
+
+      <div class="history-pagination">
+        <button id="historyPreviousButton" type="button" disabled>Previous</button>
+        <span id="historyPageLabel">Page 1</span>
+        <button id="historyNextButton" type="button" disabled>Next</button>
+      </div>
+    </article>
+  </section>
+  <footer class="footer">SentinelOps AI &middot; Defensive research workspace &middot; RDAP + VirusTotal + MySQL</footer>
+</main>
+
+<script>
+  const API = "http://localhost:8082/api/research";
+  let currentTarget = "";
+  const byId = (id) => document.getElementById(id);
+
+  function showMessage(id, message, type) {
+    const element = byId(id);
+    element.textContent = message;
+    element.className = "message " + type;
+    element.style.display = "block";
+  }
+
+  function clearMessage(id) {
+    const element = byId(id);
+    element.textContent = "";
+    element.style.display = "none";
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[character]);
+  }
+
+  async function apiRequest(url, options = {}) {
+    const response = await fetch(url, options);
+    const text = await response.text();
+    let body;
+    try { body = text ? JSON.parse(text) : null; }
+    catch { body = text; }
+    if (!response.ok) {
+      const detail = body && typeof body === "object"
+        ? body.detail || body.message || body.error
+        : body;
+      throw new Error(detail || `HTTP ${response.status}`);
+    }
+    return body;
+  }
+
+  function makeIntelLinks(target) {
+    const encoded = encodeURIComponent(target);
+    const services = [
+      { name: "VirusTotal", detail: "Search reputation and detections", url: `https://www.virustotal.com/gui/search/${encoded}` },
+      { name: "AbuseIPDB", detail: "Check IP abuse reports", url: `https://www.abuseipdb.com/check/${encoded}` },
+      { name: "URLhaus", detail: "Search malware URL intelligence", url: `https://urlhaus.abuse.ch/browse.php?search=${encoded}` },
+      { name: "urlscan.io", detail: "Search web scan results", url: `https://urlscan.io/search/#${encoded}` },
+      { name: "Shodan", detail: "Search exposed internet services", url: `https://www.shodan.io/search?query=${encoded}` },
+      { name: "Google", detail: "Search public reports and references", url: `https://www.google.com/search?q=${encoded}+threat+intelligence` }
+    ];
+    byId("intelLinks").innerHTML = services.map((service) => `
+      <a class="intel-link" href="${service.url}" target="_blank" rel="noopener noreferrer">
+        <strong>${escapeHtml(service.name)} &rarr;</strong>
+        <small>${escapeHtml(service.detail)}</small>
+      </a>
+    `).join("");
+  }
+
+  function getAttrs(response) {
+    return response?.data?.data?.attributes || {};
+  }
+
+  function setText(id, value) {
+    byId(id).textContent =
+      value === undefined || value === null || value === "" ? "Unavailable" : String(value);
+  }
+
+  function formatUnixDate(value) {
+    if (typeof value !== "number" || !Number.isFinite(value)) return "Unavailable";
+    const date = new Date(value * 1000);
+    return Number.isNaN(date.getTime()) ? "Unavailable" : date.toLocaleString();
+  }
+
+  function renderVirusTotal(response, target) {
+    const attributes = getAttrs(response);
+    const stats = attributes.last_analysis_stats || {};
+    const votes = attributes.total_votes || {};
+
+    byId("vtPanel").style.display = "block";
+    byId("vtContent").style.display = "block";
+    clearMessage("vtMessage");
+
+    setText("vtMalicious", stats.malicious ?? 0);
+    setText("vtSuspicious", stats.suspicious ?? 0);
+    setText("vtHarmless", stats.harmless ?? 0);
+    setText("vtUndetected", stats.undetected ?? 0);
+    setText("vtReputation", attributes.reputation);
+    setText("vtCountry", attributes.country);
+    setText("vtAsn", attributes.asn);
+    setText("vtOwner", attributes.as_owner || attributes.network || attributes.regional_internet_registry);
+    setText("vtDate", formatUnixDate(attributes.last_analysis_date));
+
+    if (votes.harmless !== undefined || votes.malicious !== undefined) {
+      setText("vtVotes", `Harmless: ${votes.harmless ?? 0} · Malicious: ${votes.malicious ?? 0}`);
+    } else {
+      setText("vtVotes", null);
+    }
+
+    const malicious = Number(stats.malicious || 0);
+    const suspicious = Number(stats.suspicious || 0);
+    const status = byId("vtStatus");
+    status.className = "status";
+    if (malicious > 0) {
+      status.textContent = "Malicious detections reported";
+      status.classList.add("danger");
+    } else if (suspicious > 0) {
+      status.textContent = "Suspicious detections reported";
+      status.classList.add("caution");
+    } else {
+      status.textContent = "No detections reported";
+      status.classList.add("safe");
+    }
+
+    byId("vtSubtitle").textContent = `Latest available analysis for ${target}`;
+    const isIp = target.includes(":") || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(target);
+    byId("vtReport").href = isIp
+      ? `https://www.virustotal.com/gui/ip-address/${encodeURIComponent(target)}`
+      : `https://www.virustotal.com/gui/domain/${encodeURIComponent(target)}`;
+  }
+
+  async function loadNotes(target) {
+    const list = byId("notesList");
+    list.className = "empty";
+    list.textContent = "Loading notes...";
+    try {
+      const notes = await apiRequest(`${API}/notes?target=${encodeURIComponent(target)}`);
+      if (!notes.length) {
+        list.className = "empty";
+        list.textContent = "No notes saved for this target yet.";
+        return;
+      }
+      list.className = "";
+      list.innerHTML = notes.map((note) => {
+        const date = note.createdAt ? new Date(note.createdAt).toLocaleString() : "Date unavailable";
+        return `<article class="note"><time>${escapeHtml(date)}</time><p>${escapeHtml(note.note)}</p></article>`;
+      }).join("");
+    } catch (error) {
+      list.className = "empty";
+      list.textContent = `Could not load notes: ${error.message}`;
+    }
+  }
+
+  byId("lookupForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessage("lookupMessage");
+    clearMessage("vtMessage");
+
+    const target = byId("target").value.trim();
+    if (!target) return;
+
+    const button = byId("lookupButton");
+    button.disabled = true;
+    button.textContent = "Investigating...";
+    byId("rdapPanel").style.display = "none";
+    byId("vtPanel").style.display = "none";
+
+    currentTarget = "";
+    byId("noteTarget").value = "";
+
+    try {
+      const result = await apiRequest(`${API}/lookup?target=${encodeURIComponent(target)}`);
+      currentTarget = result.target;
+      byId("target").value = result.target;
+      byId("noteTarget").value = result.target;
+      byId("resultTarget").textContent = `${result.target} Ã‚Â· ${result.type}`;
+      byId("resultData").textContent = JSON.stringify(result.data, null, 2);
+      byId("rdapPanel").style.display = "block";
+      makeIntelLinks(result.target);
+      await loadNotes(result.target);
+
+      showMessage("lookupMessage", "RDAP response received. Loading VirusTotal analysis...", "success");
+
+      try {
+        const vtResult = await apiRequest(
+          `${API}/virustotal?target=${encodeURIComponent(result.target)}`
+        );
+        renderVirusTotal(vtResult, result.target);
+        showMessage("lookupMessage", "RDAP and VirusTotal lookups completed.", "success");
+      } catch (error) {
+        byId("vtPanel").style.display = "block";
+        byId("vtContent").style.display = "none";
+        byId("vtStatus").className = "status";
+        byId("vtStatus").textContent = "Lookup unavailable";
+        showMessage("vtMessage", `VirusTotal lookup failed: ${error.message}`, "error");
+        showMessage("lookupMessage", "RDAP succeeded, but VirusTotal did not return a report.", "success");
+      }
+    } catch (error) {
+      showMessage("lookupMessage", `RDAP lookup failed: ${error.message}`, "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Investigate";
+    }
+  });
+
+  byId("noteForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearMessage("noteMessage");
+
+    if (!currentTarget) {
+      showMessage("noteMessage", "Investigate an IP or domain before saving a note.", "error");
+      return;
+    }
+
+    const note = byId("noteText").value.trim();
+    if (!note) return;
+
+    const button = byId("saveNoteButton");
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+      await apiRequest(`${API}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: currentTarget, note })
+      });
+
+      byId("noteText").value = "";
+      showMessage("noteMessage", "Research note saved to MySQL.", "success");
+      await loadNotes(currentTarget);
+    } catch (error) {
+      showMessage("noteMessage", `Could not save note: ${error.message}`, "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save note to MySQL";
+    }
+  });
+</script>
+  <script>
+  (() => {
+    const API_HISTORY = "http://localhost:8082/api/research/history";
+    const PAGE_SIZE = 10;
+    let historyPage = 0;
+    let historyTotalPages = 0;
+    let historySearchValue = "";
+    let historyRequestId = 0;
+
+    const historyById = (id) => document.getElementById(id);
+
+    function historyMessage(message, type) {
+      const el = historyById("historyMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = "message" + (message ? " " + (type || "success") : "");
+      el.style.display = message ? "block" : "none";
+    }
+
+    function historyElement(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function historySetLoading(isLoading) {
+      ["historyRefreshButton", "historySearchButton",
+       "historyClearButton", "historyPreviousButton",
+       "historyNextButton"].forEach((id) => {
+        const button = historyById(id);
+        if (button) button.disabled = isLoading;
+      });
+    }
+
+    function renderResearchHistory(data) {
+      const list = historyById("historyList");
+      const summary = historyById("historySummary");
+      const pageLabel = historyById("historyPageLabel");
+      const previous = historyById("historyPreviousButton");
+      const next = historyById("historyNextButton");
+
+      list.replaceChildren();
+
+      const records = Array.isArray(data.content) ? data.content : [];
+      historyTotalPages = Number(data.totalPages || 0);
+
+      summary.textContent =
+        `${data.totalElements || 0} saved note(s) found.`;
+
+      pageLabel.textContent =
+        `Page ${historyTotalPages === 0 ? 0 : historyPage + 1} of ${historyTotalPages}`;
+
+      previous.disabled = historyPage <= 0;
+      next.disabled = historyTotalPages === 0 ||
+                      historyPage >= historyTotalPages - 1;
+
+      if (records.length === 0) {
+        list.appendChild(historyElement(
+          "div", "empty", "No matching research notes found."
+        ));
+        return;
+      }
+
+      records.forEach((record) => {
+        const card = historyElement("article", "history-record");
+        const top = historyElement("div", "history-record-top");
+        const target = historyElement(
+          "div", "history-target", record.target || "Unknown target"
+        );
+        const dateText = record.createdAt
+          ? new Date(record.createdAt).toLocaleString()
+          : "Date unavailable";
+        const date = historyElement("div", "history-date", dateText);
+
+        top.append(target, date);
+        card.appendChild(top);
+        card.appendChild(historyElement(
+          "p", "history-note", record.note || "(Empty note)"
+        ));
+
+        const actions = historyElement("div", "history-actions");
+        const investigate = historyElement(
+          "button", "", "Investigate target"
+        );
+        investigate.type = "button";
+
+        investigate.addEventListener("click", () => {
+          const targetInput = document.getElementById("targetInput");
+          if (targetInput) {
+            targetInput.value = record.target || "";
+            targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+
+          const lookupForm = document.getElementById("lookupForm");
+          if (lookupForm) {
+            lookupForm.requestSubmit();
+          } else {
+            historyMessage(
+              "Target copied into the investigation input. Start the lookup using your existing Investigate button.",
+              "success"
+            );
+            if (targetInput) targetInput.focus();
+          }
+
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        actions.appendChild(investigate);
+        card.appendChild(actions);
+        list.appendChild(card);
+      });
+    }
+
+    async function loadResearchHistory() {
+      const requestId = ++historyRequestId;
+      historySetLoading(true);
+      historyMessage("", "");
+
+      const list = historyById("historyList");
+      list.replaceChildren(
+        historyElement("div", "empty", "Loading research history...")
+      );
+
+      try {
+        const params = new URLSearchParams({
+          search: historySearchValue,
+          page: String(historyPage),
+          size: String(PAGE_SIZE)
+        });
+
+        const response = await fetch(`${API_HISTORY}?${params.toString()}`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.message ||
+                          `Request failed with HTTP ${response.status}`);
+        }
+
+        if (requestId !== historyRequestId) return;
+
+        renderResearchHistory(data);
+      } catch (error) {
+        if (requestId !== historyRequestId) return;
+        list.replaceChildren(
+          historyElement("div", "empty",
+            `Could not load history: ${error.message}`)
+        );
+        historyById("historySummary").textContent =
+          "History could not be loaded.";
+        historyMessage(
+          "Check that the SentinelOps backend is running on port 8082.",
+          "error"
+        );
+      } finally {
+        if (requestId === historyRequestId) {
+          historySetLoading(false);
+          historyById("historyPreviousButton").disabled = historyPage <= 0;
+          historyById("historyNextButton").disabled =
+            historyTotalPages === 0 ||
+            historyPage >= historyTotalPages - 1;
+        }
+      }
+    }
+
+    historyById("historySearchForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      historySearchValue = historyById("historySearch").value.trim();
+      historyPage = 0;
+      loadResearchHistory();
+    });
+
+    historyById("historyClearButton").addEventListener("click", () => {
+      historyById("historySearch").value = "";
+      historySearchValue = "";
+      historyPage = 0;
+      loadResearchHistory();
+    });
+
+    historyById("historyRefreshButton").addEventListener("click", () => {
+      loadResearchHistory();
+    });
+
+    historyById("historyPreviousButton").addEventListener("click", () => {
+      if (historyPage > 0) {
+        historyPage--;
+        loadResearchHistory();
+      }
+    });
+
+    historyById("historyNextButton").addEventListener("click", () => {
+      if (historyPage + 1 < historyTotalPages) {
+        historyPage++;
+        loadResearchHistory();
+      }
+    });
+
+    window.loadResearchHistory = loadResearchHistory;
+    loadResearchHistory();
+  })();
+  </script>
+  <script src="/assessment.js"></script>
+</body>
+</html>
+
+
